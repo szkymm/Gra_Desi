@@ -1,7 +1,9 @@
+import csv
+import os
+
 import cv2
 import numpy as np
-import os
-import csv
+
 
 def process_image(image_path, output_dir):
     """处理单个图像并保存结果"""
@@ -25,7 +27,7 @@ def process_image(image_path, output_dir):
     green_mask = cv2.inRange(hsv, lower_green, upper_green)
 
     # Step 3: 形态学优化
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
     closed_mask = cv2.morphologyEx(green_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
     # Step 4: 轮廓检测
@@ -42,15 +44,17 @@ def process_image(image_path, output_dir):
     for idx, cnt in enumerate(valid_contours):
         list_moment = cv2.moments(cnt)
         if list_moment["m00"] != 0:
-            cx = int(list_moment["m10"]/list_moment["m00"])
-            cy = int(list_moment["m01"]/list_moment["m00"])
+            cx = int(list_moment["m10"] / list_moment["m00"])
+            cy = int(list_moment["m01"] / list_moment["m00"])
         else:
             (cx, cy), _ = cv2.minEnclosingCircle(cnt)
 
         points.append((cx, cy))
         cv2.circle(debug_image, (cx, cy), 8, (0, 0, 255), -1)
-        cv2.putText(debug_image, f"{idx+1}", (cx+10, cy+5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.putText(
+            debug_image, f"{idx + 1}", (cx + 10, cy + 5),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2
+            )
 
     # 生成输出路径
     base_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -63,34 +67,37 @@ def process_image(image_path, output_dir):
         writer = csv.writer(csvfile)
         writer.writerow(["ID", "X", "Y"])
         for i, (x, y) in enumerate(points):
-            writer.writerow([i+1, x, y])
+            writer.writerow([i + 1, x, y])
 
     return points, output_img, output_csv
+
 
 def batch_process_images():
     """批量处理images目录下的所有PNG文件"""
     input_dir = "./images"
     output_base = "./results"
 
-    # 确保输入目录存在
     if not os.path.exists(input_dir):
         print(f"错误：输入目录 {input_dir} 不存在")
         return
 
-    # 遍历所有PNG文件
     for filename in os.listdir(input_dir):
         if filename.lower().endswith('.png'):
             image_id = os.path.splitext(filename)[0]
             image_path = os.path.join(input_dir, filename)
 
-            # 创建输出目录：meta_data/<image_id>/results/
+            # 创建输出目录：results/<image_id>/
             output_dir = os.path.join(output_base, image_id)
             os.makedirs(output_dir, exist_ok=True)
 
             # 处理图像
             points, img_path, csv_path = process_image(image_path, output_dir)
+            print("==========")
             print(f"处理完成：{filename}")
-            print(f"  检测到 {len(points)} 个点 | 校验图: {img_path} | 坐标文件: {csv_path}")
+            print(f"检测到 {len(points)} 个点")
+            print(f"校验图路径：{os.path.relpath(img_path)}")
+            print(f"坐标文件路径：{os.path.relpath(csv_path)}")
+
 
 if __name__ == "__main__":
     batch_process_images()
