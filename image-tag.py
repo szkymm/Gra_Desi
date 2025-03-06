@@ -1,64 +1,96 @@
 import cv2
 import numpy as np
 import os
+import csv
 
-def process_image_with_markers(image_path):
-    # 读取图像
+def process_image(image_path, output_dir):
+    """处理单个图像并保存结果"""
+    # 读取图像并转换颜色空间
     image = cv2.imread(image_path)
+    if image is None:
+        print(f"警告：无法读取图像 {image_path}")
+        return [], "", ""
+
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    # Step 1: 颜色区域分割
-    lower_green = (25, 40, 40)
-    upper_green = (90, 255, 255)
-    mask_green = cv2.inRange(hsv, lower_green, upper_green)
+    # Step 1: 消除白色干扰
+    lower_white = np.array([0, 0, 200])
+    upper_white = np.array([180, 30, 255])
+    white_mask = cv2.inRange(hsv, lower_white, upper_white)
+    image[white_mask == 255] = [0, 0, 0]
 
-    lower_white = (0, 0, 200)
-    upper_white = (180, 30, 255)
-    mask_white = cv2.inRange(hsv, lower_white, upper_white)
+    # Step 2: 检测黄绿色区域
+    lower_green = np.array([25, 40, 40])
+    upper_green = np.array([90, 255, 255])
+    green_mask = cv2.inRange(hsv, lower_green, upper_green)
 
-    combined_mask = cv2.bitwise_and(mask_green, cv2.bitwise_not(mask_white))
-
-    # Step 2: 形态学处理
+    # Step 3: 形态学优化
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-    refined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel)
+    closed_mask = cv2.morphologyEx(green_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-    # Step 3: 轮廓检测与过滤
-    contours, _ = cv2.findContours(refined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    img_area = image.shape[0] * image.shape[1]
-    filtered_contours = [cnt for cnt in contours if cv2.contourArea(cnt) < img_area * 0.05]
+    # Step 4: 轮廓检测
+    contours, _ = cv2.findContours(closed_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    valid_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 10]
 
-    # Step 4: 计算特征点
+    # Step 5: 计算中心点
     points = []
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    for contour in filtered_contours:
-        contour_mask = np.zeros_like(refined_mask)
-        cv2.drawContours(contour_mask, [contour], -1, 255, -1)
-        ys, xs = np.where(contour_mask == 255)
+    debug_image = image.copy()
+    overlay = image.copy()
+    cv2.drawContours(overlay, valid_contours, -1, (0, 255, 0), -1)
+    cv2.addWeighted(overlay, 0.3, debug_image, 0.7, 0, debug_image)
 
-        colors = image_rgb[ys, xs]
-        avg_color = np.mean(colors, axis=0)
-        distances = np.linalg.norm(colors - avg_color, axis=1)
-        min_idx = np.argmin(distances)
-        points.append((xs[min_idx], ys[min_idx]))
+    for idx, cnt in enumerate(valid_contours):
+        list_moment = cv2.moments(cnt)
+        if list_moment["m00"] != 0:
+            cx = int(list_moment["m10"]/list_moment["m00"])
+            cy = int(list_moment["m01"]/list_moment["m00"])
+        else:
+            (cx, cy), _ = cv2.minEnclosingCircle(cnt)
 
-    # Step 5: 在图像上绘制标记点
-    marked_image = image.copy()
-    for (x, y) in points:
-        # 绘制红色圆形标记（BGR颜色空间）
-        cv2.circle(marked_image, (x, y), 5, (0, 0, 255), -1)    # 实心圆
-        cv2.circle(marked_image, (x, y), 7, (255, 255, 255), 2)  # 白色边框
+        points.append((cx, cy))
+        cv2.circle(debug_image, (cx, cy), 8, (0, 0, 255), -1)
+        cv2.putText(debug_image, f"{idx+1}", (cx+10, cy+5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
-    # Step 6: 保存校验图像
-    base_name, ext = os.path.splitext(image_path)
-    output_path = f"{base_name}_check{ext}"
-    cv2.imwrite(output_path, marked_image)
-    print(f"校验图像已保存至：{output_path}")
+    # 生成输出路径
+    base_name = os.path.splitext(os.path.basename(image_path))[0]
+    output_img = os.path.join(output_dir, f"{base_name}_check.png")
+    output_csv = os.path.join(output_dir, f"{base_name}_points.csv")
 
-    return points
+    # 保存结果
+    cv2.imwrite(output_img, debug_image)
+    with open(output_csv, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["ID", "X", "Y"])
+        for i, (x, y) in enumerate(points):
+            writer.writerow([i+1, x, y])
 
-# 使用示例
-file_path_name = "./png/1723.png"
-result_points = process_image_with_markers(file_path_name)
-print("检测到的最近点坐标：")
-for idx, (x, y) in enumerate(result_points):
-    print(f"{file_path_name.replace(r'./png/','').replace('.png','')}|{x}|{y}")
+    return points, output_img, output_csv
+
+def batch_process_images():
+    """批量处理images目录下的所有PNG文件"""
+    input_dir = "./images"
+    output_base = "./results"
+
+    # 确保输入目录存在
+    if not os.path.exists(input_dir):
+        print(f"错误：输入目录 {input_dir} 不存在")
+        return
+
+    # 遍历所有PNG文件
+    for filename in os.listdir(input_dir):
+        if filename.lower().endswith('.png'):
+            image_id = os.path.splitext(filename)[0]
+            image_path = os.path.join(input_dir, filename)
+
+            # 创建输出目录：meta_data/<image_id>/results/
+            output_dir = os.path.join(output_base, image_id)
+            os.makedirs(output_dir, exist_ok=True)
+
+            # 处理图像
+            points, img_path, csv_path = process_image(image_path, output_dir)
+            print(f"处理完成：{filename}")
+            print(f"  检测到 {len(points)} 个点 | 校验图: {img_path} | 坐标文件: {csv_path}")
+
+if __name__ == "__main__":
+    batch_process_images()
