@@ -1,9 +1,11 @@
-import os
 import glob
+import os
 import re
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 import rasterio
+
 
 def process_data(image_id, output_base="./results", min_points=60):
     """处理单个图像ID对应的dat文件和坐标数据"""
@@ -34,7 +36,7 @@ def process_data(image_id, output_base="./results", min_points=60):
     try:
         with rasterio.open(dat_path) as src:
             # 转换坐标索引（修复xy_df引用）
-            indices = np.array([(y-1, x-1) for x, y in xy_df[["X", "Y"]].values], dtype=int)
+            indices = np.array([(y - 1, x - 1) for x, y in xy_df[["X", "Y"]].values], dtype=int)
 
             # 边界检查
             if (indices >= [src.height, src.width]).any():
@@ -46,9 +48,9 @@ def process_data(image_id, output_base="./results", min_points=60):
 
             # 构建结果DataFrame
             results = pd.DataFrame(
-                np.column_stack([xy_df[["ID", "X", "Y"]].values, reflectance]),
-                columns=["ID", "X", "Y"] + [f"Band_{i+1}" for i in range(reflectance.shape[1])]
-            )
+                    np.column_stack([xy_df[["ID", "X", "Y"]].values, reflectance]),
+                    columns=["ID", "X", "Y"] + [f"Band_{i + 1}" for i in range(reflectance.shape[1])]
+                    )
 
             # 保存结果
             results.to_csv(output_csv, index=False)
@@ -58,6 +60,7 @@ def process_data(image_id, output_base="./results", min_points=60):
 
     except Exception as e:
         print(f"处理{image_id}失败：{str(e)}")
+
 
 def batch_process():
     """批量处理所有有效图像ID"""
@@ -69,6 +72,7 @@ def batch_process():
 
     for image_id in image_ids:
         process_data(image_id)
+
 
 if __name__ == "__main__":
     batch_process()
