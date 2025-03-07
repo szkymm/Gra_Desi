@@ -26,8 +26,8 @@
   |--...其他类似文件夹
 |--points
 |--images
-|--image-tag.py
-└--obtain-reflectance.py
+|--image_tag.py
+└--obtain_reflectance.py
 ```
 
 ## 二、需要你做的事情

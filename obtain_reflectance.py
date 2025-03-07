@@ -4,27 +4,11 @@ import re
 import pandas as pd
 import numpy as np
 import rasterio
-import datetime
-
-def process_data(output_csv, folder_path='./points', min_points=60):
-    """主处理函数：从dat文件中提取坐标点反射率，确保每个文件至少提取min_points个数据"""
-    # 读取坐标文件
-    xy_path = os.path.join(folder_path, 'xy2.xlsx')
-    if not os.path.exists(xy_path):
-        raise FileNotFoundError(f"坐标文件 {xy_path} 不存在")
-    xy_df = pd.read_excel(xy_path, names=['id', 'x', 'y'])  # 强制列名
-
-import os
-import glob
-import re
-import pandas as pd
-import numpy as np
-import rasterio
 
 def process_data(image_id, output_base="./results", min_points=60):
     """处理单个图像ID对应的dat文件和坐标数据"""
     # 路径配置
-    dat_path = os.path.join("./meta_data", image_id, f"REFLECTANCE_{image_id}.dat")
+    dat_path = os.path.join("./meta_data", image_id, f"results/REFLECTANCE_{image_id}.dat")
     coord_csv = os.path.join(output_base, image_id, f"{image_id}_points.csv")
     output_csv = os.path.join(output_base, image_id, f"reflectance_{image_id}.csv")
 
@@ -46,10 +30,10 @@ def process_data(image_id, output_base="./results", min_points=60):
         print(f"读取坐标文件失败：{coord_csv}\n错误详情：{str(e)}")
         return
 
-    # 处理反射率数据
+    # 确保xy_df存在后继续执行
     try:
         with rasterio.open(dat_path) as src:
-            # 转换坐标索引
+            # 转换坐标索引（修复xy_df引用）
             indices = np.array([(y-1, x-1) for x, y in xy_df[["X", "Y"]].values], dtype=int)
 
             # 边界检查
@@ -62,7 +46,7 @@ def process_data(image_id, output_base="./results", min_points=60):
 
             # 构建结果DataFrame
             results = pd.DataFrame(
-                np.column_stack([xy_df[["ID", "X", "Y"]], reflectance),
+                np.column_stack([xy_df[["ID", "X", "Y"]].values, reflectance]),
                 columns=["ID", "X", "Y"] + [f"Band_{i+1}" for i in range(reflectance.shape[1])]
             )
 
@@ -79,7 +63,7 @@ def batch_process():
     """批量处理所有有效图像ID"""
     # 自动发现所有可能存在的image_id
     dat_files = glob.glob("./meta_data/**/REFLECTANCE_*.dat", recursive=True)
-    image_ids = list(set(re.findall(r"REFLECTANCE_(\d+)\.dat", f) for f in dat_files))
+    image_ids = list(set(re.findall(r"REFLECTANCE_(\d+)\.dat", f)[0] for f in dat_files))
 
     print(f"找到 {len(image_ids)} 个待处理图像ID")
 
@@ -87,5 +71,4 @@ def batch_process():
         process_data(image_id)
 
 if __name__ == "__main__":
-    # 示例：同时处理1722和1723
     batch_process()
