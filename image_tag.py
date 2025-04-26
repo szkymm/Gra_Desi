@@ -6,7 +6,7 @@ import numpy as np
 
 
 def process_image(image_path, output_dir):
-    """处理单个图像并保存结果"""
+    """处理单个图像并保存结果（已修改排序逻辑）"""
     # 读取图像并转换颜色空间
     image = cv2.imread(image_path)
     if image is None:
@@ -36,25 +36,59 @@ def process_image(image_path, output_dir):
 
     # Step 5: 计算中心点
     points = []
-    debug_image = image.copy()
-    overlay = image.copy()
-    cv2.drawContours(overlay, valid_contours, -1, (0, 255, 0), -1)
-    cv2.addWeighted(overlay, 0.3, debug_image, 0.7, 0, debug_image)
-
-    for idx, cnt in enumerate(valid_contours):
+    for cnt in valid_contours:
         list_moment = cv2.moments(cnt)
         if list_moment["m00"] != 0:
             cx = int(list_moment["m10"] / list_moment["m00"])
             cy = int(list_moment["m01"] / list_moment["m00"])
         else:
             (cx, cy), _ = cv2.minEnclosingCircle(cnt)
-
+            cx, cy = int(cx), int(cy)
         points.append((cx, cy))
-        cv2.circle(debug_image, (cx, cy), 8, (0, 0, 255), -1)
+
+    # 新增排序逻辑：按列分组，每列从下到上排序
+    if points:
+        # 按X坐标排序初步分组
+        points_sorted = sorted(points, key=lambda p: p[0])
+
+        # 动态列分组（X坐标差超过20视为新列）
+        columns = []
+        current_col = [points_sorted[0]]
+        for p in points_sorted[1:]:
+            if abs(p[0] - current_col[-1][0]) > 20:
+                columns.append(current_col)
+                current_col = [p]
+            else:
+                current_col.append(p)
+        columns.append(current_col)
+
+        # 每列内部按Y从大到小排序（图像坐标系Y向下增大）
+        for col in columns:
+            col.sort(key=lambda p: -p[1])
+
+        # 合并所有点并重新编号
+        sorted_points = []
+        for col in columns:
+            sorted_points.extend(col)
+
+        # 重新生成带序号的点集
+        points = [(i+1, x, y) for i, (x, y) in enumerate(sorted_points)]
+    else:
+        points = []
+
+    # 生成调试图像
+    debug_image = image.copy()
+    overlay = image.copy()
+    cv2.drawContours(overlay, valid_contours, -1, (0, 255, 0), -1)
+    cv2.addWeighted(overlay, 0.3, debug_image, 0.7, 0, debug_image)
+
+    # 绘制序号和点（使用排序后的顺序）
+    for idx, (x, y) in enumerate(sorted_points, 1):  # start=1
+        cv2.circle(debug_image, (x, y), 8, (0, 0, 255), -1)
         cv2.putText(
-            debug_image, f"{idx + 1}", (cx + 10, cy + 5),
+            debug_image, f"{idx}", (x + 10, y + 5),
             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2
-            )
+        )
 
     # 生成输出路径
     base_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -66,8 +100,8 @@ def process_image(image_path, output_dir):
     with open(output_csv, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["ID", "X", "Y"])
-        for i, (x, y) in enumerate(points):
-            writer.writerow([i + 1, x, y])
+        for item in points:
+            writer.writerow(item)
 
     return points, output_img, output_csv
 

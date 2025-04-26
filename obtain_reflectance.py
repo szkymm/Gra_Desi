@@ -7,7 +7,7 @@ import pandas as pd
 import rasterio
 
 
-def process_data(image_id, output_base="./results", min_points=60):
+def process_data(image_id, output_base="./results", min_points=59):
     """处理单个图像ID对应的dat文件和坐标数据"""
     # 路径配置
     dat_path = os.path.join("./meta_data", image_id, f"results/REFLECTANCE_{image_id}.dat")
