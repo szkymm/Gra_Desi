@@ -1,8 +1,11 @@
 import csv
+import logging
 import os
 
 import cv2
 import numpy as np
+
+logger = logging.getLogger("app_logger")
 
 
 def process_image(image_path, output_dir):
@@ -10,7 +13,7 @@ def process_image(image_path, output_dir):
     # 读取图像并转换颜色空间
     image = cv2.imread(image_path)
     if image is None:
-        print(f"警告：无法读取图像 {image_path}")
+        logger.warning(f"警告：无法读取图像 {image_path}")
         return [], "", ""
 
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -72,7 +75,7 @@ def process_image(image_path, output_dir):
             sorted_points.extend(col)
 
         # 重新生成带序号的点集
-        points = [(i+1, x, y) for i, (x, y) in enumerate(sorted_points)]
+        points = [(i + 1, x, y) for i, (x, y) in enumerate(sorted_points)]
     else:
         points = []
 
@@ -86,9 +89,9 @@ def process_image(image_path, output_dir):
     for idx, (x, y) in enumerate(sorted_points, 1):  # start=1
         cv2.circle(debug_image, (x, y), 8, (0, 0, 255), -1)
         cv2.putText(
-            debug_image, f"{idx}", (x + 10, y + 5),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2
-        )
+                debug_image, f"{idx}", (x + 10, y + 5),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2
+                )
 
     # 生成输出路径
     base_name = os.path.splitext(os.path.basename(image_path))[0]
@@ -107,12 +110,11 @@ def process_image(image_path, output_dir):
 
 
 def batch_process_images():
-    """批量处理images目录下的所有PNG文件"""
     input_dir = "./images"
     output_base = "./results"
 
     if not os.path.exists(input_dir):
-        print(f"错误：输入目录 {input_dir} 不存在")
+        logger.error(f"错误：输入目录 {input_dir} 不存在")
         return
 
     for filename in os.listdir(input_dir):
@@ -120,17 +122,16 @@ def batch_process_images():
             image_id = os.path.splitext(filename)[0]
             image_path = os.path.join(input_dir, filename)
 
-            # 创建输出目录：results/<image_id>/
+            # 创建输出目录
             output_dir = os.path.join(output_base, image_id)
             os.makedirs(output_dir, exist_ok=True)
 
             # 处理图像
             points, img_path, csv_path = process_image(image_path, output_dir)
-            print("==========")
-            print(f"处理完成：{filename}")
-            print(f"检测到 {len(points)} 个点")
-            print(f"校验图路径：{os.path.relpath(img_path)}")
-            print(f"坐标文件路径：{os.path.relpath(csv_path)}")
+            logger.info(f"处理完成：{filename}")
+            logger.info(f"检测到 {len(points)} 个点")
+            logger.info(f"校验图路径：{os.path.relpath(img_path)}")
+            logger.info(f"坐标文件路径：{os.path.relpath(csv_path)}")
 
 
 if __name__ == "__main__":
