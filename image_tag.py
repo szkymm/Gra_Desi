@@ -128,10 +128,10 @@ def batch_process_images():
 
             # 处理图像
             points, img_path, csv_path = process_image(image_path, output_dir)
-            logger.info(f"处理完成：{filename}")
-            logger.info(f"检测到 {len(points)} 个点")
-            logger.info(f"校验图路径：{os.path.relpath(img_path)}")
-            logger.info(f"坐标文件路径：{os.path.relpath(csv_path)}")
+            logger.info(
+                    "\n" + "=" * 20 + f"\n文件：{filename}处理完成。\n本文件共检测到： {len(points)} 个点。\n生成校验图路径："
+                                      f"{os.path.relpath(img_path)}\n提取坐标文件路径：{os.path.relpath(csv_path)}" + "\n" + "=" * 20
+                    )
 
 
 if __name__ == "__main__":

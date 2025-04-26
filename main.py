@@ -45,7 +45,7 @@ def main():
     try:
         batch_process_images()  # 调用image-tag的批量处理
         phase1_time = time.time() - start_time
-        logger.info(f"✅ 图像处理完成 耗时: {phase1_time:.1f}秒")
+        logger.info(f"\n✅ 图像处理完成 耗时: {phase1_time:.1f}秒")
     except Exception as e:
         logger.error(f"阶段1处理失败: {str(e)}")
 
