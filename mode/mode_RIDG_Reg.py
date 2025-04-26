@@ -1,5 +1,7 @@
 from sklearn.linear_model import Ridge
-from .base_model import BaseModel
+
+from mode_BASE_Mod import BaseModel
+
 
 class RidgeRegression(BaseModel):
     def __init__(self):
