@@ -14,4 +14,6 @@ class XGBoostReg(BaseModel):
             }
 
     def build_model(self):
+        if not self.params:
+            raise ValueError("Parameters for ElasticNet model are not defined.")
         return XGBRegressor(**self.params)

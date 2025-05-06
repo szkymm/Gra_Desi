@@ -1,0 +1,75 @@
+{
+  "Ridge": {
+    "init_func": "_init_linear_model",
+    "para_conf": {
+      "alpha": 1.0,
+      "random_state": 42
+    }
+  },
+  "Lasso": {
+    "init_func": "_init_linear_model",
+    "para_conf": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    }
+  },
+  "ElasticNet": {
+    "init_func": "_init_linear_model",
+    "para_conf": {
+      "alpha": 0.1,
+      "l1_ratio": 0.5,
+      "max_iter": 10000,
+      "random_state": 42
+    }
+  },
+  "PLSReg": {
+    "init_func": "_init_linear_model",
+    "para_conf": {
+      "n_components": 2,
+      "scale": true
+    }
+  },
+  "SVRRBF": {
+    "init_func": "_init_svm_model",
+    "para_conf": {
+      "kernel": "rbf",
+      "C": 1.0,
+      "gamma": "scale"
+    }
+  },
+  "SVRPoly": {
+    "init_func": "_init_svm_model",
+    "para_conf": {
+      "kernel": "poly",
+      "C": 1.0,
+      "degree": 3,
+      "coef0": 0.0
+    }
+  },
+  "XGBoostReg": {
+    "init_func": "_init_boost_model",
+    "para_conf": {
+      "n_estimators": 100,
+      "max_depth": 3,
+      "learning_rate": 0.1
+    }
+  },
+  "LightGBMReg": {
+    "init_func": "_init_boost_model",
+    "para_conf": {
+      "num_leaves": 31,
+      "learning_rate": 0.05,
+      "n_estimators": 100
+    }
+  },
+  "CatBoostReg": {
+    "init_func": "_init_boost_model",
+    "para_conf": {
+      "iterations": 100,
+      "depth": 4,
+      "learning_rate": 0.1,
+      "silent": true
+    }
+  }
+}
