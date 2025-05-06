@@ -12,12 +12,15 @@ from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
+from catboost import CatBoostRegressor
 from joblib import dump
+from lightgbm import LGBMRegressor
 from sklearn.base import BaseEstimator
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.linear_model import ElasticNet, Lasso, Ridge
 from sklearn.metrics import r2_score
 from sklearn.svm import SVR
+from xgboost import XGBRegressor
 
 
 class AutoDataModelTrainerCore:
@@ -150,14 +153,17 @@ class AutoDataModelTrainerCore:
                 raise Exception(f"❌ 未找到初始化函数：{func_name},模型名称：{mode_name}。")  # 抛出错误代码
         return dict_mode_regi
 
-    def _init_linear_model(self, **para_mode) -> BaseEstimator:
+    def _init_linear_boost_model(self, **para_mode) -> BaseEstimator:
         """"""
         mode_name = para_mode.pop("mode_name")  # 从参数字典中移除并获取键为"mode_name"的值，该值代表模型名称。
         dict_mode = {  # 定义一个字典
             "Ridge": Ridge,  # 将字符串"Ridge"映射到Ridge类。
             "Lasso": Lasso,  # 将字符串"Lasso"映射到Lasso类。
             "ElasticNet": ElasticNet,  # 将字符串"ElasticNet"映射到ElasticNet类。
-            "PLSReg": PLSRegression  # 将字符串"PLSReg"映射到PLSRegression类。
+            "PLSReg": PLSRegression,  # 将字符串"PLSReg"映射到PLSRegression类。
+            "XGBoostReg": XGBRegressor,  # 将字符串"XGBoostReg"映射到XGBRegressor类。
+            "LightGBMReg": LGBMRegressor,  # 将字符串"LightGBMReg"映射到LGBMRegressor类。
+            "CatBoostReg": CatBoostRegressor  # 将字符串"CatBoostReg"映射到CatBoostRegressor类。
             }
         if mode_name not in dict_mode:  # 检查提供的模型名称是否不在支持的模型字典中。
             self.root_logg.error(f"❌ 不支持的模型：{mode_name}。")  # 如果模型不被支持，记录错误日志信息。
