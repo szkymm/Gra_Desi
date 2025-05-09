@@ -52,7 +52,6 @@ class AutoDataModelTrainerCore:
         self.regi_mode = self._init_model_registry()  # 初始化模型注册表并载入模型配置
         self.retr_maxm = 3
 
-
     def _init_directories(self):
         """
         初始化所需的目录结构。
@@ -122,13 +121,13 @@ class AutoDataModelTrainerCore:
              键为模型名称，值为元组 (初始化函数, 参数配置)
         Initialize the model registry, load the registry file, and build a mapping between the model's initialization 
         function and parameter configuration.
-        This method first checks if the registry file exists. If it does not exist, it logs a warning and throws an
-        exception. If the file exists, it parses its content and iterates through each model configuration to verify whether
-        the initialization function exists. It then stores the model name along with its corresponding initialization
-        function and parameter configuration into a dictionary. Finally, it returns this dictionary.
-                :param: None
-        :raises FileNotFoundError: Thrown if the registry file is not found
-        :raises Exception: Thrown if an initialization function for a certain model is not found
+        this method first checks if the registry file exists. if it does not exist, it logs a warning and throws an
+        exception. if the file exists, it parses its content and iterates through each model configuration to verify whether
+        the initialization function exists. it then stores the model name along with its corresponding initialization
+        function and parameter configuration into a dictionary. finally, it returns this dictionary.
+        :param: none.
+        :raises FileNotFoundError: thrown if the registry file is not found.
+        :raises Exception: thrown if an initialization function for a certain model is not found.
         :return: dict[str, tuple[callable, dict]]
                  A dictionary containing the model name as the key and a tuple of (initialization function,
                  parameter configuration) as the value.
@@ -301,13 +300,16 @@ class AutoDataModelTrainerCore:
 
 class DataPreprocessing:
     def __init__(self):
-        """"""
+        """
+
+        """
 
         self.base_path = AutoDataModelTrainerCore().base_path
         self.data_path = AutoDataModelTrainerCore().rezu_path
         self.sets_path = AutoDataModelTrainerCore().sets_path
         self.band_name = "sets_band_wave.json"
         self.refl_name = "rezu_spad_refl.csv"
+        self.func_name = "sets_data_func.json"
         self.root_logg = AutoDataModelTrainerCore().root_logg
         self.dict_refl = self._init_reflectance_csv()
         self.band_wave = self._init_gain_wave_band()
@@ -315,14 +317,12 @@ class DataPreprocessing:
         self.vali_rati = 0.2
         self.test_rati = 0.1
         self.spli_dids = self._init_random_dataset_selector()
-
-        self.data_proc = {
-            1: "",
-            2: ""
-            }
+        self.func_data = self._init_fetch_formula_config()
 
     def _init_random_dataset_selector(self):
-        """"""
+        """
+
+        """
         data_sids = list(range(1, 241))
         random.shuffle(data_sids)
         tran_size = int(self.tran_rati * len(data_sids))
@@ -339,7 +339,9 @@ class DataPreprocessing:
         return dict_spli
 
     def _init_gain_wave_band(self):
-        """"""
+        """
+
+        """
         band_path = Path(self.sets_path, self.band_name)
         if not band_path.exists():
             self.root_logg.error(f"波段配置文件不存在：{band_path.name}。")
@@ -351,7 +353,9 @@ class DataPreprocessing:
         return dict_band_wave
 
     def find_closest_band(self, targ_wave: float, thre_shol: float = 5.0) -> int:
-        """"""
+        """
+
+        """
         if targ_wave <= 0:
             self.root_logg.error(f"目标波长{targ_wave}必须为正数。")
             raise ValueError("目标波长必须为正数")
@@ -378,7 +382,9 @@ class DataPreprocessing:
         return clos_band
 
     def create_index_function(self, func_stri):
+        """
 
+        """
         list_wave = {float(wave_leng) for wave_leng in re.findall(r'@(\d+\.?\d*)', func_stri)}
         replacements = {f'@{int(wave_leng)}': f"reflectance['{self.find_closest_band(wave_leng)}']"
                         for wave_leng in list_wave}
@@ -392,6 +398,9 @@ class DataPreprocessing:
                 )
 
     def _init_reflectance_csv(self):
+        """
+
+        """
         need_floa = {"SPAD"} | {f"Band_{numb_rows}" for numb_rows in range(1, 205)}
         refl_path = Path(self.data_path, self.refl_name)
         if not refl_path.exists():
@@ -419,7 +428,19 @@ class DataPreprocessing:
                 refl_data[conv_rows["ID"]] = conv_rows
         return refl_data
 
-    def
+    def _init_fetch_formula_config(self):
+        """
+
+        """
+        func_path = Path(self.sets_path, self.func_name)
+        with open(func_path, "r", encoding="utf-8") as func_file:
+            func_json = js.load(func_file)
+        dict_func_sets = func_json["func_list"]
+        return dict_func_sets
 
     def run(self):
+        for func_name in self.func_data.keys():
+            stri_func = self.func_data[func_name]
+            comp_daty = self.create_index_function(stri_func)
+
         return ""
