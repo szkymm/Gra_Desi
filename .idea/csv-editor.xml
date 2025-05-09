@@ -129,6 +129,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\results\Result_Data_Aggregation.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\results\rezu_spad_refl.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
