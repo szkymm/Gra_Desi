@@ -164,7 +164,7 @@ class AutoDataModelTrainerCore:
         Initialize and return the specified machine learning model object.
         This method selects and instantiates the corresponding model object from a predefined model dictionary based on the
         provided model name and parameters. If the provided model name is not in the list of supported models, an error log
-        is recorded and an exception is raised. After successful initialization, a log message is recorded and a message
+        is recorded and an exception is raised. After successful initialization, a log message is recorded, and a message
         indicating that the model has been loaded is printed.
         :param para_mode: A dictionary containing the model name and initialization parameters.
                           Must contain the key "mode_name", whose value is a string representing the model name.
@@ -296,6 +296,13 @@ class AutoDataModelTrainerCore:
                 )
 
         return dict_resu
+
+    def run(self):
+        spli_data = DataPreprocessing().run()
+        for func_name in spli_data.keys():
+            func_data = spli_data[func_name]
+            for mode_name in self.regi_mode.keys():
+                self._train_single_model(mode_name, func_data)
 
 
 class DataPreprocessing:
@@ -438,9 +445,59 @@ class DataPreprocessing:
         dict_func_sets = func_json["func_list"]
         return dict_func_sets
 
-    def run(self):
-        for func_name in self.func_data.keys():
-            stri_func = self.func_data[func_name]
-            comp_daty = self.create_index_function(stri_func)
+    def create_data_splits(self, func_data):
+        dict_spli_data = {}
+        tran_lisx = []
+        tran_lisy = []
+        vali_lisx = []
+        vali_lisy = []
+        test_lisx = []
+        test_lisy = []
+        for tran_cunt in self.spli_dids["tran_sets"]:
+            tran_lisx.append((func_data[str(tran_cunt)]["comp_datx"], 1))
+            tran_lisy.append(func_data[str(tran_cunt)]["comp_daty"])
+        dict_spli_data["tran_data"] = {
+            "tran_datx": tran_lisx,
+            "tran_daty": tran_lisy
+            }
+        for vali_cunt in self.spli_dids["vali_sets"]:
+            vali_lisx.append((func_data[str(vali_cunt)]["comp_datx"], 1))
+            vali_lisy.append(func_data[str(vali_cunt)]["comp_daty"])
+        dict_spli_data["vali_data"] = {
+            "vali_datx": vali_lisx,
+            "vali_daty": vali_lisy
+            }
+        for test_cunt in self.spli_dids["test_sets"]:
+            test_lisx.append((func_data[str(test_cunt)]["comp_datx"], 1))
+            test_lisy.append(func_data[str(test_cunt)]["comp_daty"])
+        dict_spli_data["test_data"] = {
+            "test_datx": test_lisx,
+            "test_daty": test_lisy
+            }
+        return dict_spli_data
 
-        return ""
+    def compute_singel_vegetation_indices(self, func_name):
+        stri_func = self.func_data[func_name]
+        func_objt = self.create_index_function(stri_func)
+        keyw_data = {}
+        for coun_grop in range(1, 241):
+            sign_refl = self.dict_refl[str(coun_grop)]
+            func_rezu = func_objt(sign_refl)
+            comp_daty = sign_refl["SPAD"]
+            keyw_data[str(coun_grop)] = {
+                "comp_datx": func_rezu,
+                "comp_daty": comp_daty
+                }
+        spli_data = self.create_data_splits(keyw_data)
+        return spli_data
+
+    def run(self):
+        dict_spli_data = {}
+        for func_name in self.func_data.keys():
+            func_data = self.compute_singel_vegetation_indices(func_name)
+            dict_spli_data[func_name] = func_data
+        return dict_spli_data
+
+
+if __name__ == "__main__":
+    AutoDataModelTrainerCore().run()
