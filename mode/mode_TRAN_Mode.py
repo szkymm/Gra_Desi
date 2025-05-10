@@ -454,26 +454,17 @@ class DataPreprocessing:
         test_lisx = []
         test_lisy = []
         for tran_cunt in self.spli_dids["tran_sets"]:
-            tran_lisx.append((func_data[str(tran_cunt)]["comp_datx"], 1))
+            tran_lisx.append([func_data[str(tran_cunt)]["comp_datx"], 1])
             tran_lisy.append(func_data[str(tran_cunt)]["comp_daty"])
-        dict_spli_data["tran_data"] = {
-            "tran_datx": tran_lisx,
-            "tran_daty": tran_lisy
-            }
+        dict_spli_data["tran_sets"] = tran_lisx, tran_lisy
         for vali_cunt in self.spli_dids["vali_sets"]:
-            vali_lisx.append((func_data[str(vali_cunt)]["comp_datx"], 1))
+            vali_lisx.append([func_data[str(vali_cunt)]["comp_datx"], 1])
             vali_lisy.append(func_data[str(vali_cunt)]["comp_daty"])
-        dict_spli_data["vali_data"] = {
-            "vali_datx": vali_lisx,
-            "vali_daty": vali_lisy
-            }
+        dict_spli_data["vali_sets"] = vali_lisx, vali_lisy
         for test_cunt in self.spli_dids["test_sets"]:
-            test_lisx.append((func_data[str(test_cunt)]["comp_datx"], 1))
+            test_lisx.append([func_data[str(test_cunt)]["comp_datx"], 1])
             test_lisy.append(func_data[str(test_cunt)]["comp_daty"])
-        dict_spli_data["test_data"] = {
-            "test_datx": test_lisx,
-            "test_daty": test_lisy
-            }
+        dict_spli_data["test_sets"] = test_lisx, test_lisy
         return dict_spli_data
 
     def compute_singel_vegetation_indices(self, func_name):
