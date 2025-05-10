@@ -4,6 +4,7 @@
 """
 
 """
+
 import csv
 import datetime as dt
 import json as js
@@ -39,17 +40,29 @@ class AutoDataModelTrainerCore:
         """
 
         """
-        self.base_path = Path(sys.argv[0]).resolve().parent.parent  # 获取项目基础路径
-        self.ckpt_path = Path(self.base_path, "ckpt")  # 定义模型检查点存储路径
-        self.data_path = Path(self.base_path, "data")  # 定义数据文件存储路径
-        self.logs_path = Path(self.base_path, "logs")  # 定义日志文件存储路径
-        self.mode_path = Path(self.base_path, "mode")  # 定义模块文件存储路径
-        self.rezu_path = Path(self.base_path, "results")  # 定义结果文件存储路径
-        self.sets_path = Path(self.base_path, "sets")  # 定义设定文件存储路径
-        self._init_logger_manager()  # 初始化日志管理器并配置日志记录器
-        self._init_directories()  # 初始化所需的目录结构
-        self.name_regi = "sets_mode_regi.json"  # 定义注册表文件的名称
-        self.regi_mode = self._init_model_registry()  # 初始化模型注册表并载入模型配置
+        # 初始化基础路径（获取项目根目录的父级目录）
+        self.base_path = Path(sys.argv[0]).resolve().parent.parent
+        # 检查点存储路径（保存训练好的模型）
+        self.ckpt_path = Path(self.base_path, "ckpt")
+        # 原始数据存储路径（存放输入数据文件）
+        self.data_path = Path(self.base_path, "data")
+        # 日志文件存储路径（存放系统运行日志）
+        self.logs_path = Path(self.base_path, "logs")
+        # 模块代码存储路径（存放功能模块文件）
+        self.mode_path = Path(self.base_path, "mode")
+        # 结果文件存储路径（存放计算结果数据）
+        self.rezu_path = Path(self.base_path, "results")
+        # 配置文件存储路径（存放参数配置文件）
+        self.sets_path = Path(self.base_path, "sets")
+        # 初始化日志管理系统
+        self.root_logg = self._init_logger_manager()
+        # 创建必要目录结构
+        self._init_directories()
+        # 模型注册表配置文件名
+        self.name_regi = "sets_mode_regi.json"
+        # 加载模型注册表配置
+        self.regi_mode = self._init_model_registry()
+        # 单模型最大训练尝试次数
         self.retr_maxm = 3
 
     def _init_directories(self):
@@ -64,24 +77,25 @@ class AutoDataModelTrainerCore:
         :return: None
         :raises: None
         """
-        # 定义需求的文件路径，使用字典存储路径和描述信息
+        # 目录配置字典（路径对象: 目录描述）
         dict_reqs_dirs = {
-            self.ckpt_path: "模型检查点存储路径",
-            self.data_path: "数据文件存储路径",
-            self.logs_path: "日志文件存储路径",
-            self.mode_path: "模块文件存储路径",
-            self.rezu_path: "结果文件存储路径",
-            self.sets_path: "设定文件存储路径"
+            self.ckpt_path: "模型检查点目录",
+            self.data_path: "原始数据目录",
+            self.logs_path: "系统日志目录",
+            self.mode_path: "功能模块目录",
+            self.rezu_path: "计算结果目录",
+            self.sets_path: "配置设置目录"
             }
         # 遍历字典中的每个路径及其描述信息
         for full_path, desc_info in dict_reqs_dirs.items():
-            if not full_path.exists():  # 检查路径是否存在
-                full_path.mkdir()  # 如果路径不存在，则创建该路径
-                # 使用日志记录器记录路径创建信息
-                self.root_logg.info(f"{desc_info}：{full_path}，文件路径已创建。")
-                # 打印路径创建信息到控制台
-                print(f"{desc_info}：{full_path}，文件路径已创建。")
-        return self.root_logg
+            # 检查路径是否存在
+            if not full_path.exists():
+                # 如果路径不存在，则创建该路径
+                full_path.mkdir()
+                # 记录日志
+                self.root_logg.info(f"✅ {desc_info}：{full_path}，文件路径已创建。")
+                # 控制台输出
+                print(f"✅ {desc_info}：{full_path}，文件路径已创建。")
 
     def _init_logger_manager(self):
         """
@@ -96,19 +110,31 @@ class AutoDataModelTrainerCore:
         :return: None
         :raises: None
         """
-        self.root_logg = log.getLogger("ADModelTrainerCore")  # 设置名为"ADModelTrainerCore"的logger实例
-        self.root_logg.setLevel(log.INFO)  # 设置日志记录级别为INFO
-        self.logs_path.mkdir(exist_ok=True)  # 确保日志目录存在，如果不存在则创建
-        stri_time = dt.datetime.now().strftime("%Y_%m%d_%H%M_00%S")  # 格式化当前时间为指定格式字符串
-        logs_name = f"Tran_Logs_{stri_time}.log"  # 定义日志文件名，包含时间戳
-        logs_fmts = log.Formatter("[%(asctime)s] %(levelname)s - %(message)s", datefmt="%Y-%m-%d_%H:%M:%S")  # 定义日志消息的格式
-        path_logs = Path(self.logs_path, logs_name)  # 构造日志文件的完整路径
-        objt_logs_hand = log.FileHandler(path_logs, encoding="utf-8")  # 创建一个对象用于写入日志文件
-        objt_logs_hand.setFormatter(logs_fmts)  # 为日志对象设置日志记录格式
-        # 检查当前logger实例中是否已存在FileHandler类型的处理器，避免重复添加
+        # 创建日志记录器实例
+        self.root_logg = log.getLogger("ADModelTrainerCore")
+        # 设置日志级别为INFO
+        self.root_logg.setLevel(log.INFO)
+        # 确保日志目录存在
+        self.logs_path.mkdir(exist_ok=True)
+        # 格式化当前时间为指定格式字符串
+        stri_time = dt.datetime.now().strftime("%Y_%m%d_%H%M_00%S")
+        # 定义日志文件名
+        logs_name = f"Tran_Logs_{stri_time}.log"
+        # 定义日志消息的格式
+        logs_fmts = log.Formatter("[%(asctime)s] %(levelname)s - %(message)s", datefmt="%Y-%m-%d_%H:%M:%S")
+        # 构造日志文件的完整路径
+        path_logs = Path(self.logs_path, logs_name)
+        # 创建一个对象用于写入日志文件
+        objt_logs_hand = log.FileHandler(path_logs, encoding="utf-8")
+        # 为日志对象设置日志记录格式
+        objt_logs_hand.setFormatter(logs_fmts)
+        # 避免重复添加处理器（检查现有处理器类型）
         if not any(isinstance(h, log.FileHandler) for h in self.root_logg.handlers):
-            self.root_logg.addHandler(objt_logs_hand)  # 如果不存在，则将定义好的FileHandler添加到logger实例中
-        self.root_logg.info("✅ 日志管理器初始化成功完成，已进入就绪状态。")  # 记录一条INFO级别的日志
+            # 如果不存在，则添加文件处理器
+            self.root_logg.addHandler(objt_logs_hand)
+        # 记录初始化完成日志
+        self.root_logg.info("✅ 日志系统初始化完成。")
+        return self.root_logg
 
     def _init_model_registry(self) -> Dict[str, dict]:
         """
@@ -133,30 +159,36 @@ class AutoDataModelTrainerCore:
                  parameter configuration) as the value.
         :rtype: dict[str, tuple[callable, dict]]
         """
-        path_full = Path(self.sets_path, self.name_regi)  # 构造注册表文件的完整路径
+        # 构造注册表文件的完整路径
+        regi_path = Path(self.sets_path, self.name_regi)
         # 检查注册表文件是否存在
-        if not path_full.exists():
-            self.root_logg.error(f"❗ 注册表文件：{self.name_regi}未找到。")  # 如果文件不存在，记录警告日志
-            print(f"❗ 注册表文件：{self.name_regi}未找到。")  # 在控制台打印错误信息
-            raise FileNotFoundError(f"❗ 模型注册表：{self.name_regi}文件未找到。")  # 抛出错误代码
+        if not regi_path.exists():
+            # 如果文件不存在，记录警告日志
+            self.root_logg.error(f"❗ 注册表文件缺失：{self.name_regi}")
+            # 抛出错误代码
+            raise FileNotFoundError(f"❗ 模型注册表文件 {self.name_regi} 未找到")
         # 打开注册表文件并加载其内容
-        with open(path_full, "r", encoding="utf-8") as regi_file:
-            regi_json = js.load(regi_file)  # 使用json模块加载文件内容
-        dict_mode_regi = {}  # 初始化字典用于存储模型注册信息
-        # 遍历注册表中的每个模型配置
-        for mode_name, conf_mode in regi_json.items():
-            func_name = conf_mode.get("init_func")  # 获取模型初始化函数的名称
-            conf_para = conf_mode.get("para_conf", {})  # 获取模型参数配置（如果存在）
-            # 检查当前对象是否具有该初始化函数
-            if hasattr(self, func_name):
-                init_func = getattr(self, func_name)  # 如果存在，获取该函数对象
-                dict_mode_regi[mode_name] = (init_func, conf_para)  # 将模型名称与对应的初始化函数和参数配置存入字典
-                self.root_logg.info("✅ 模型注册表初始化完成。")  # 记录模型注册成功的日志
-            else:
-                # 如果初始化函数不存在，记录错误日志
-                self.root_logg.error(f"❌ 未找到初始化函数：{func_name},模型名称：{mode_name}。")
-                print(f"❌ 未找到初始化函数：{func_name},模型名称：{mode_name}。")  # 在控制台打印错误信息
-                raise Exception(f"❌ 未找到初始化函数：{func_name},模型名称：{mode_name}。")  # 抛出错误代码
+        with open(regi_path, "r", encoding="utf-8") as regi_file:
+            # 使用json模块加载文件内容
+            regi_data = js.load(regi_file)
+        # 初始化注册字典
+        dict_mode_regi = {}
+        # 加载模型名称与配置
+        for mode_name, conf_mode in regi_data.items():
+            # 获取模型函数名称
+            init_func_name = conf_mode.get("init_func")
+            # 获取模型参数配置（如果存在）
+            init_func_conf = conf_mode.get("para_conf", {})
+            # 判断函数是否存在
+            if not hasattr(self, init_func_name):
+                # 记录错误信息
+                self.root_logg.error(f"❌ 初始化函数缺失：{init_func_name}")
+                # 抛出错误代码
+                raise AttributeError(f"❌ 模型 {init_func_name} 初始化函数未找到")
+            # 配置模型函数
+            init_func = getattr(self, init_func_name)
+            # 将结果存入注册字典中
+            dict_mode_regi[init_func_name] = (init_func, init_func_conf)
         return dict_mode_regi
 
     def _init_simple_fit_model(self, **para_mode) -> BaseEstimator:
