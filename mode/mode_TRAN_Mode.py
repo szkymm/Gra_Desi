@@ -188,7 +188,7 @@ class AutoDataModelTrainerCore:
             # 配置模型函数
             init_func = getattr(self, init_func_name)
             # 将结果存入注册字典中
-            dict_mode_regi[init_func_name] = (init_func, init_func_conf)
+            dict_mode_regi[mode_name] = (init_func, init_func_conf)
         return dict_mode_regi
 
     def _init_simple_fit_model(self, **para_mode) -> BaseEstimator:
@@ -352,8 +352,8 @@ class DataPreprocessing:
         self.root_logg = AutoDataModelTrainerCore().root_logg
         self.dict_refl = self._init_reflectance_csv()
         self.band_wave = self._init_gain_wave_band()
-        self.tran_rati = 0.7
-        self.vali_rati = 0.2
+        self.tran_rati = 0.8
+        self.vali_rati = 0.1
         self.test_rati = 0.1
         self.spli_dids = self._init_random_dataset_selector()
         self.func_data = self._init_fetch_formula_config()
