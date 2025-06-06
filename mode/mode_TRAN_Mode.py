@@ -14,6 +14,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Any, Dict
+from scipy.stats import ks_2samp
 
 import numpy as np
 from catboost import CatBoostRegressor
@@ -277,6 +278,10 @@ class AutoDataModelTrainerCore:
             "n_retry": 0,
             "path_ckpt": None
             }
+        rmse = 0
+        smape = 0
+        ksa = 0
+        nse = 0
         para_tran = {'mode_name': mode_name, **para_conf}
         best_model = None
         for vari_atte in range(1, self.retr_maxm + 1):
@@ -304,6 +309,10 @@ class AutoDataModelTrainerCore:
                     dict_resu['stts_train'] = '达标'
                     self.root_logg.info(f"✅ 第 {vari_atte} 次尝试达标")
                     break
+                rmse = np.sqrt(np.mean((y_test - y_pred)**2))
+                smape = np.mean(2 * np.abs(y_pred - y_test) / (np.abs(y_test) + np.abs(y_pred))) * 100
+                ksa, _ = ks_2samp(y_test, y_pred)
+                nse = 1 - (np.sum((y_test - y_pred)**2) / np.sum((y_test - np.mean(y_test))**2))
             except Exception as e:
                 error_msg = f"❌ 第 {vari_atte} 次训练失败：{str(e)}"
                 self.root_logg.error(error_msg)
@@ -324,7 +333,7 @@ class AutoDataModelTrainerCore:
                 # 训练结果记录
         self.root_logg.info(
                 f"▷ 训练完成：{mode_name} | 状态：{dict_resu['stts_train']} | "
-                f"最佳R²：{dict_resu['best_r2']:.4f} | 尝试次数：{dict_resu['n_retry']}"
+                f"最佳R²：{dict_resu['best_r2']:.4f}|RMSE:{rmse:.4f}|sMAPE:{smape:.4f} |KS:{ksa:.4f}|NSE:{nse:.4f}| 尝试次数：{dict_resu['n_retry']}"
                 )
 
         return dict_resu
@@ -352,8 +361,8 @@ class DataPreprocessing:
         self.root_logg = AutoDataModelTrainerCore().root_logg
         self.dict_refl = self._init_reflectance_csv()
         self.band_wave = self._init_gain_wave_band()
-        self.tran_rati = 0.8
-        self.vali_rati = 0.1
+        self.tran_rati = 0.7
+        self.vali_rati = 0.2
         self.test_rati = 0.1
         self.spli_dids = self._init_random_dataset_selector()
         self.func_data = self._init_fetch_formula_config()
@@ -465,6 +474,7 @@ class DataPreprocessing:
                         conv_rows[band_keys] = band_valu
                 # 使用 ID 作为键存储转换后的行
                 refl_data[conv_rows["ID"]] = conv_rows
+
         return refl_data
 
     def _init_fetch_formula_config(self):
@@ -512,6 +522,7 @@ class DataPreprocessing:
                 "comp_daty": comp_daty
                 }
         spli_data = self.create_data_splits(keyw_data)
+        # spli_data = keyw_data
         return spli_data
 
     def run(self):
@@ -524,3 +535,4 @@ class DataPreprocessing:
 
 if __name__ == "__main__":
     AutoDataModelTrainerCore().run()
+    # print(DataPreprocessing().run())

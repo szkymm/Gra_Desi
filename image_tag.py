@@ -84,7 +84,7 @@ def process_image(image_path, output_dir):
     overlay = image.copy()
     cv2.drawContours(overlay, valid_contours, -1, (0, 255, 0), -1)
     cv2.addWeighted(overlay, 0.3, debug_image, 0.7, 0, debug_image)
-
+    """
     # 绘制序号和点（使用排序后的顺序）
     for idx, (x, y) in enumerate(sorted_points, 1):  # start=1
         cv2.circle(debug_image, (x, y), 8, (0, 0, 255), -1)
@@ -92,10 +92,10 @@ def process_image(image_path, output_dir):
                 debug_image, f"{idx}", (x + 10, y + 5),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2
                 )
-
+    """
     # 生成输出路径
     base_name = os.path.splitext(os.path.basename(image_path))[0]
-    output_img = os.path.join(output_dir, f"{base_name}_check.png")
+    output_img = os.path.join(output_dir, f"{base_name}_check1.png")
     output_csv = os.path.join(output_dir, f"{base_name}_points.csv")
 
     # 保存结果
